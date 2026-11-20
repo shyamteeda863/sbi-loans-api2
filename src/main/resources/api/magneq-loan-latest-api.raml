@@ -1,0 +1,66 @@
+#%RAML 1.0
+title: magneq-loan-latest-api
+version: 1.0.0
+
+securitySchemes:
+  auth:
+    type: OAuth 2.0
+
+traits:
+  requestHeaders: !include /resuableProperties/traits/requestHeaders.raml
+  requestQuery: !include /resuableProperties/traits/queryParams.raml
+
+types:
+  inpschema: !include /resuableProperties/types/inpdataType.raml
+  outschema: !include /resuableProperties/types/successResp.raml
+  clientErrors: !include /resuableProperties/types/clientErrors.raml
+  serverErrors: !include /resuableProperties/types/serverErrors.raml
+
+resourceTypes:
+  loan_id_resource: !include /resuableProperties/resourceTypes/resourceType.raml
+
+
+/loans:
+  securedBy:
+    - auth 
+  is:
+    - requestHeaders
+  description: To create Loan Accounts for customers
+  post:
+    body:
+      application/json:
+        type: inpschema
+    responses:
+      201:
+        body:
+          application/json:
+            type: outschema
+      400:
+        body:
+          application/json:
+            type: clientErrors
+      500:
+        body:
+          application/json:
+            type: serverErrors
+
+  /{loan_type}:
+    uriParameters:
+      loan_type:
+        type: string
+        enum: ["PERSONAL", "GOLD", "VEHICLE", "HOME"]
+    get:
+      description: To fetch/retrieve the loan details belonging to a specific loan type of a customer
+      is:
+        - requestQuery
+      responses:
+        200:
+          body:
+            application/json:
+              type: !include /resuableProperties/types/example.raml
+              
+    /{loan_id}:
+      uriParameters:
+        loan_id:
+          type: string
+      type: loan_id_resource

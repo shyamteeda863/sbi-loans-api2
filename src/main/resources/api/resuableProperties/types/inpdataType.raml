@@ -1,0 +1,27 @@
+#%RAML 1.0 DataType
+type: object
+properties:
+          customer_name:
+            type: string
+            required: false
+          customer_id:
+            type: string
+            required: true
+          loan_type:
+            type: string
+            
+          loan_amount:
+            type: number
+          tenure:
+            type: number
+          interest:
+            type: number
+example: 
+          {
+"customer_name": "Akash",
+"customer_id": "12456cbmxska",
+"loan_type": "PERSONAL",
+"loan_amount": 100000,
+"tenure": 60,
+"interest": 8.0
+}

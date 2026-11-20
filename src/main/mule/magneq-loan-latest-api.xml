@@ -1,0 +1,361 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd 
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+    <http:listener-config name="magneq-loan-latest-api-httpListenerConfig">
+        <http:listener-connection host="localhost" port="8081" />
+    </http:listener-config>
+    <apikit:config name="magneq-loan-latest-api-config" api="magneq-loan-latest-api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="a89485b6-2a1c-4f57-92ba-d3fffcf79c51" >
+		<http:request-connection host="localhost" port="8085" />
+	</http:request-config>
+	<http:request-config name="HTTP_Request_configuration1" doc:name="HTTP Request configuration" doc:id="9ecafa22-03c8-4279-85c8-5485ac189cbf" >
+		<http:request-connection host="localhost" port="8082" />
+	</http:request-config>
+	<os:object-store name="loans_Object_store" doc:name="Object store" doc:id="55cce56a-8a42-480b-871f-dcf3240e5b68" entryTtl="60" expirationInterval="30" />
+	<flow name="magneq-loan-latest-api-main">
+        <http:listener config-ref="magneq-loan-latest-api-httpListenerConfig" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="magneq-loan-latest-api-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:BAD_REQUEST">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Bad request"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Method not allowed"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">405</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not acceptable"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">406</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Unsupported media type"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">415</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not Implemented"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="magneq-loan-latest-api-console">
+        <http:listener config-ref="magneq-loan-latest-api-httpListenerConfig" path="/console/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="magneq-loan-latest-api-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="put:\loans\(loan_type)\(loan_id):application\json:magneq-loan-latest-api-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="loan_type">attributes.uriParams.'loan_type'</ee:set-variable>
+                <ee:set-variable variableName="loan_id">attributes.uriParams.'loan_id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  loan_id: "GOLD_1234",
+  message: "Loan info updated successfully"
+} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="delete:\loans\(loan_type)\(loan_id):magneq-loan-latest-api-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="loan_type">attributes.uriParams.'loan_type'</ee:set-variable>
+                <ee:set-variable variableName="loan_id">attributes.uriParams.'loan_id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  loan_id: "GOLD_1234",
+  message: "Loan account closed successfully"
+} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="patch:\loans\(loan_type)\(loan_id):application\json:magneq-loan-latest-api-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="loan_type">attributes.uriParams.'loan_type'</ee:set-variable>
+                <ee:set-variable variableName="loan_id">attributes.uriParams.'loan_id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  loan_id: "GOLD_1234",
+  message: "Loan info updated successfully"
+} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\loans\(loan_type)\(loan_id):magneq-loan-latest-api-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="loan_type">attributes.uriParams.'loan_type'</ee:set-variable>
+                <ee:set-variable variableName="loan_id">attributes.uriParams.'loan_id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  customer_id: "1234",
+  loan_id: "PERSONAL_1234",
+  loan_amount: 20000,
+  tenure: 60,
+  interest: 8
+} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\loans\(loan_type):magneq-loan-latest-api-config">
+        <ee:transform doc:name="Transform Message">
+            <ee:variables>
+                <ee:set-variable variableName="loan_type">attributes.uriParams.'loan_type'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+[
+  {
+    loan_id: "PERSONAL_1234",
+    loan_amount: 20000,
+    tenure: 60,
+    interest: 8
+  }, 
+  {
+    loan_id: "PERSONAL_5678",
+    loan_amount: 30000,
+    tenure: 40,
+    interest: 7
+  }
+] as Array {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="post:\loans:application\json:magneq-loan-latest-api-config">
+        <ee:transform doc:name="Transform Message" doc:id="74eef8a8-1a69-4f9f-80cc-c2ba32d275c3" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="loansPostData" ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<http:request method="GET" doc:name="Request" doc:id="d2c0af7a-9371-4515-afb0-1fa718419236" config-ref="HTTP_Request_configuration" path="/authentication-api" target="tokenInformation"/>
+		<set-variable value="#[vars.tokenInformation.token]" doc:name="Set Variable" doc:id="9b86eaac-8dba-4bcd-a996-64a77290987e" variableName="tokenId"/>
+		<http:request method="POST" doc:name="Request" doc:id="ee82ee9a-28bf-46a9-9e2c-7caa86656059" config-ref="HTTP_Request_configuration1" path="/api/credit-score/validate" target="creditScoreData">
+			<http:body ><![CDATA[#[%dw 2.0
+output application/json
+---
+{
+	customer_id: vars.loansPostData.customer_id
+}]]]></http:body>
+			<http:headers ><![CDATA[#[output application/java
+---
+{
+	Authorization : vars.tokenId
+}]]]></http:headers>
+		</http:request>
+		<choice doc:name="Choice" doc:id="6f09759e-06d6-44dc-80d8-99044c7a3be6" >
+			<when expression="#[(((vars.creditScoreData.credit_score default 0) as Number) &gt;=(700 as Number))]">
+				<ee:transform doc:name="Transform Message" doc:id="41d64546-7b61-4cb7-9bd6-fb3e52174a43" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+[
+	vars.loansPostData ++ {
+		loan_id: vars.loansPostData.loan_type ++ "_" ++ uuid()
+	}
+]]]></ee:set-payload>
+					</ee:message>
+					<ee:variables >
+						<ee:set-variable variableName="loanData" ><![CDATA[%dw 2.0
+output application/json
+---
+[
+	vars.loansPostData ++ {
+		loan_id: vars.loansPostData.loan_type ++ "_" ++ uuid()
+	}
+]]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+				<flow-ref doc:name="Flow Reference" doc:id="2b0bdc7c-4d87-4368-bca3-9b5a8c6e5e2c" name="magneq-loan-latest-apiFlow"/>
+			</when>
+			<otherwise >
+				<ee:transform doc:name="Transform Message" doc:id="58994dca-d64e-4a64-bcbd-72d0d8fc6913" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	customer_id: vars.loansPostData.customer_id,
+	credit_score: vars.creditScoreData.credit_score,
+	message: "Poor Credit Score !"
+} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+		<!-- [STUDIO:"Transform Message"]<ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+&#45;&#45;-
+{
+  loan_id: "PERSONAL_47895456",
+  message: "Loan Account created successfully"
+} as Object {encoding: "UTF-8", mediaType: "application/json"}&#93;&#93;></ee:set-payload>
+            </ee:message>
+        </ee:transform> [STUDIO] -->
+    </flow>
+	<flow name="magneq-loan-latest-apiFlow" doc:id="3669daa1-4679-4907-8e84-a5f67f9541f9" >
+		<os:contains doc:name="Contains" doc:id="0f6fb8c0-ea96-4b3c-8bba-a8d362dd523e" key="#[vars.loansPostData.customer_id]" objectStore="loans_Object_store" target="cLoans"/>
+		<choice doc:name="Choice" doc:id="ff6f9e13-36ee-4693-84b4-0bb662194655" >
+			<when expression="#[vars.cLoans == true]">
+				<os:retrieve doc:name="Retrieve" doc:id="161dd6d7-0d59-4da6-ae7f-1596fcee171c" objectStore="loans_Object_store" key="#[vars.loansPostData.customer_id]" target="existing_cLoans">
+					<os:default-value ><![CDATA[#[[]]]]></os:default-value>
+				</os:retrieve>
+				<ee:transform doc:name="Transform Message" doc:id="e6fdc561-d59d-4213-a16a-0b3bac132573">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+vars.existing_cLoans ++ vars.loanData]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<os:store doc:name="Store" doc:id="08c58e6a-7d39-4ab5-8c32-4262860ac89d" key="#[vars.loansPostData.customer_id]"/>
+			</when>
+			<otherwise >
+				<os:store doc:name="Store" doc:id="67cb10fa-48a8-4c9f-b244-d722f994588f" key="#[vars.loansPostData.customer_id]">
+					<os:value ><![CDATA[#[vars.loanData]]]></os:value>
+				</os:store>
+			</otherwise>
+		</choice>
+		<ee:transform doc:name="Transform Message" doc:id="be8774eb-eae2-47e8-b661-4c4b3debc875" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	customer_id: vars.loansPostData.customer_id,
+	credit_score: vars.creditScoreData.credit_score,
+	loan_id: vars.loanData.loan_id,
+	message: vars.loansPostData.loan_type ++ "Loan account created successfully"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>

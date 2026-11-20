@@ -1,0 +1,66 @@
+#%RAML 1.0 ResourceType
+get:
+        description: To retrieve the loan details of a customer
+      
+        responses:
+          200:
+            body:
+              application/json:
+                example:
+                  {
+                    "customer_id": "1234",
+                    "loan_id": "PERSONAL_1234",
+                    "loan_amount": 20000,
+                    "tenure": 60,
+                    "interest": 8
+                  }
+put:
+        description: To update the entire/complete loan information
+        body:
+          application/json:
+            example:
+                {
+                    "customer_id": "12345",
+                    "loan_id": "GOLD_1234",
+                    "loan_amount": 20000,
+                    "tenure": 50,
+                    "interest": 7
+                  }
+        responses:
+          200:
+            body:
+              application/json:
+                example:
+                  {
+                    "loan_id": "GOLD_1234",
+                    "message": "Loan info updated successfully"
+                  }
+patch:
+        description: To update a specific record of a Loan
+        body:
+          application/json:
+            example:
+              {
+                "loan_amount": 500000
+              }
+        responses:
+          200:
+            body:
+              application/json:
+                example:
+                  {
+                    "loan_id": "GOLD_1234",
+                    "message": "Loan info updated successfully"
+                  }
+delete:
+        description: To close/remove the loan account
+
+        responses:
+          200:
+            body:
+              application/json:
+                example:
+                  {
+                    "loan_id": "GOLD_1234",
+                    "message": "Loan account closed successfully"
+                  }
